@@ -1,10 +1,9 @@
-use actix_web::{App, HttpServer};
-use zero2prod::{health_check, subscribe};
+use std::net::TcpListener;
+
+use zero2prod::startup::run;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(health_check).service(subscribe))
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+    let address = TcpListener::bind("127.0.0.1:8000")?;
+    run(address)?.await
 }

@@ -3,7 +3,7 @@ mod tests {
     use std::collections::HashMap;
 
     use actix_web::{test, App};
-    use zero2prod::{health_check, subscribe};
+    use zero2prod::routes::{health_check::health_check, subscriptions::subscribe};
 
     #[actix_web::test]
     async fn health_check_works() {

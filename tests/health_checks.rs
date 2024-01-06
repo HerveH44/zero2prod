@@ -2,8 +2,13 @@
 mod tests {
     use std::collections::HashMap;
 
-    use actix_web::{test, App};
-    use zero2prod::routes::{health_check::health_check, subscriptions::subscribe};
+    use actix_web::{test, web, App};
+    use sqlx::{Connection, Executor, PgConnection, PgPool};
+    use uuid::Uuid;
+    use zero2prod::{
+        configuration::{get_configuration, DatabaseSettings},
+        routes::{health_check::health_check, subscriptions::subscribe},
+    };
 
     #[actix_web::test]
     async fn health_check_works() {
@@ -15,11 +20,13 @@ mod tests {
 
     #[actix_web::test]
     async fn subscribe_returns_a_200_for_valid_form_data() {
-        let app = test::init_service(App::new().service(subscribe)).await;
-        let body = HashMap::from([
-            ("name", "le%20guin"),
-            ("email", "ursula_le_guin%40gmail.com"),
-        ]);
+        let mut configuration = get_configuration().expect("Failed to read configuration.");
+        configuration.database.database_name = Uuid::new_v4().to_string();
+        let connection_pool = configure_database(&configuration.database).await;
+        let db_pool = web::Data::new(connection_pool.clone());
+        let app = test::init_service(App::new().service(subscribe).app_data(db_pool.clone())).await;
+
+        let body = HashMap::from([("name", "le guin"), ("email", "ursula_le_guin@gmail.com")]);
 
         let req = test::TestRequest::post()
             .uri("/subscriptions")
@@ -27,6 +34,34 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
+
+        let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
+            .fetch_one(&connection_pool)
+            .await
+            .expect("Failed to fetch saved subscription.");
+
+        assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+        assert_eq!(saved.name, "le guin");
+    }
+
+    async fn configure_database(config: &DatabaseSettings) -> PgPool {
+        // Create database
+        let mut connection = PgConnection::connect(&config.connection_string_without_db())
+            .await
+            .expect("Failed to connect to Postgres");
+        connection
+            .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+            .await
+            .expect("Failed to create database.");
+        // Migrate database
+        let connection_pool = PgPool::connect(&config.connection_string())
+            .await
+            .expect("Failed to connect to Postgres.");
+        sqlx::migrate!("./migrations")
+            .run(&connection_pool)
+            .await
+            .expect("Failed to migrate the database");
+        connection_pool
     }
 
     #[actix_web::test]

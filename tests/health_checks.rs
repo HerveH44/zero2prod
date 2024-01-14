@@ -65,10 +65,11 @@ mod tests {
     }
 
     #[actix_web::test]
-    async fn subscribe_returns_a_400_when_data_is_missing() {
+    async fn subscribe_returns_a_400_when_data_is_invalid() {
         let app = test::init_service(App::new().service(subscribe)).await;
         let test_cases = vec![
             (("name", "le%20guin"), "missing the email"),
+            (("name", "{}}{}<>"), "bad name format"),
             (("email", "ursula_le_guin%40gmail.com"), "missing the name"),
             (("", ""), "missing both the mail and the name"),
         ];

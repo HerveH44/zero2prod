@@ -3238,6 +3238,7 @@ dependencies = [
  "claims",
  "config",
  "fake",
+ "once_cell",
  "quickcheck",
  "quickcheck_macros",
  "reqwest",

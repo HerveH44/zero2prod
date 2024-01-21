@@ -1,20 +1,20 @@
 use std::time::Duration;
 
-use reqwest::{Client, Url};
+use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 
 use super::SubscriberEmail;
 
 pub struct EmailClient {
     http_client: Client,
-    base_url: Url,
+    base_url: String,
     sender: SubscriberEmail,
     authorization_token: Secret<String>,
 }
 
 impl EmailClient {
     pub fn new(
-        base_url: Url,
+        base_url: String,
         sender: SubscriberEmail,
         authorization_token: Secret<String>,
         timeout: Duration,
@@ -36,7 +36,7 @@ impl EmailClient {
         html_content: &str,
         text_content: &str,
     ) -> Result<(), reqwest::Error> {
-        let url = format!("{}email", self.base_url);
+        let url = format!("{}/email", self.base_url);
         let request_body = SendEmailRequest {
             from: self.sender.as_ref(),
             to: recipient.as_ref(),
@@ -81,7 +81,6 @@ mod test {
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::Fake;
     use fake::Faker;
-    use reqwest::Url;
     use secrecy::Secret;
     use serde_json;
     use wiremock::matchers::any;
@@ -124,7 +123,7 @@ mod test {
 
     fn email_client(url: String) -> EmailClient {
         EmailClient::new(
-            Url::parse(&url).unwrap(),
+            url,
             email(),
             Secret::new(Faker.fake()),
             Duration::from_millis(200),

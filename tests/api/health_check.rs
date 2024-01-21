@@ -1,11 +1,20 @@
-use actix_web::{test, App};
+use crate::helpers::spawn_app;
 
-use zero2prod::routes::health_check;
-
-#[actix_web::test]
+#[tokio::test]
 async fn health_check_works() {
-    let app = test::init_service(App::new().service(health_check)).await;
-    let req = test::TestRequest::get().uri("/health_check").to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_success());
+    // Arrange
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    // Act
+    let response = client
+        // Use the returned application address
+        .get(&format!("{}/health_check", &app.address))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+    assert_eq!(Some(0), response.content_length());
 }

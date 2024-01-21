@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use reqwest::{Client, Url};
 use secrecy::{ExposeSecret, Secret};
 
@@ -15,9 +17,10 @@ impl EmailClient {
         base_url: Url,
         sender: SubscriberEmail,
         authorization_token: Secret<String>,
+        timeout: Duration,
     ) -> Self {
         Self {
-            http_client: Client::new(),
+            http_client: Client::builder().timeout(timeout).build().unwrap(),
             base_url,
             sender,
             authorization_token,
@@ -68,6 +71,8 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use crate::domain::EmailClient;
     use crate::domain::SubscriberEmail;
     use claims::assert_err;
@@ -122,6 +127,7 @@ mod test {
             Url::parse(&url).unwrap(),
             email(),
             Secret::new(Faker.fake()),
+            Duration::from_millis(200),
         )
     }
 
@@ -171,6 +177,27 @@ mod test {
 
         Mock::given(any())
             .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        // Act
+        let outcome = email_client
+            .send_email(email(), &subject(), &content(), &content())
+            .await;
+
+        assert_err!(outcome);
+    }
+
+    #[tokio::test]
+    async fn send_email_times_out_if_server_takes_too_long() {
+        let mock_server = MockServer::start().await;
+        let email_client = email_client(mock_server.uri());
+
+        let response = ResponseTemplate::new(200).set_delay(Duration::from_secs(180));
+
+        Mock::given(any())
+            .respond_with(response)
             .expect(1)
             .mount(&mock_server)
             .await;

@@ -2,7 +2,10 @@ use reqwest::Url;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Duration,
+};
 
 use crate::domain::SubscriberEmail;
 
@@ -18,6 +21,7 @@ pub struct EmailClientSettings {
     pub base_url: String,
     pub sender_email: String,
     pub authorization_token: Secret<String>,
+    pub timeout_milliseconds: u64,
 }
 
 impl EmailClientSettings {
@@ -27,6 +31,10 @@ impl EmailClientSettings {
 
     pub fn url(&self) -> Result<Url, String> {
         reqwest::Url::parse(&self.base_url).map_err(|e| format!("Invalid base url {}", e))
+    }
+
+    pub fn timeout(&self) -> Duration {
+        Duration::from_millis(self.timeout_milliseconds)
     }
 }
 

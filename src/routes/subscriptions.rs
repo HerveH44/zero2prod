@@ -1,15 +1,11 @@
 use crate::{
-    domain::{EmailClient, NewSubscriber, SubscriberEmail, SubscriberName},
+    domain::{EmailClient, NewSubscriber, SubscriberEmail, SubscriberName, SubscriptionToken},
     startup::ApplicationBaseUrl,
 };
 use actix_web::{post, web, HttpResponse, Responder};
 use chrono::Utc;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{Executor, PgPool, Postgres, Row, Transaction};
-use std::{
-    char,
-    convert::{TryFrom, TryInto},
-};
+use std::convert::{TryFrom, TryInto};
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -57,8 +53,8 @@ pub async fn subscribe(
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
 
-    let subscription_token = generate_subscription_token();
-    if store_token(&mut transaction, subscriber_id, &subscription_token)
+    let subscription_token = SubscriptionToken::default();
+    if store_token(&mut transaction, subscriber_id, subscription_token.as_ref())
         .await
         .is_err()
     {
@@ -69,7 +65,7 @@ pub async fn subscribe(
         &email_client,
         new_subscriber,
         &base_url.0,
-        &subscription_token,
+        subscription_token.as_ref(),
     )
     .await
     .is_err()
@@ -102,14 +98,6 @@ async fn store_token(
     })?;
 
     Ok(())
-}
-
-fn generate_subscription_token() -> String {
-    let mut rng = thread_rng();
-    std::iter::repeat_with(|| rng.sample(Alphanumeric))
-        .map(char::from)
-        .take(25)
-        .collect()
 }
 
 #[tracing::instrument(

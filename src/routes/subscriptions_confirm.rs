@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use tracing::instrument;
 use uuid::Uuid;
 
+use crate::domain::SubscriptionToken;
+
 #[derive(serde::Deserialize)]
 pub struct Parameters {
     subscription_token: String,
@@ -14,7 +16,11 @@ pub async fn confirm(
     pool: web::Data<PgPool>,
     parameters: web::Query<Parameters>,
 ) -> impl Responder {
-    let id = match get_subscriber_id_from_token(&pool, &parameters.subscription_token).await {
+    let subscription_token = match SubscriptionToken::parse(&parameters.subscription_token) {
+        Ok(subscription_token) => subscription_token,
+        Err(error) => return HttpResponse::BadRequest().body(error),
+    };
+    let id = match get_subscriber_id_from_token(&pool, subscription_token.as_ref()).await {
         Ok(id) => id,
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };

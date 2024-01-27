@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{post, web, HttpResponse, Responder};
 use chrono::Utc;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use sqlx::{Executor, PgPool, Postgres, Transaction};
+use sqlx::{Executor, PgPool, Postgres, Row, Transaction};
 use std::{
     char,
     convert::{TryFrom, TryInto},
@@ -151,6 +151,14 @@ pub async fn insert_subscriber(
     transaction: &mut Transaction<'_, Postgres>,
     new_subscriber: &NewSubscriber,
 ) -> Result<Uuid, sqlx::Error> {
+    let query = sqlx::query!(
+        r#"SELECT id from subscriptions WHERE email = $1"#,
+        new_subscriber.email.as_ref(),
+    );
+    if let Ok(Some(row)) = transaction.fetch_optional(query).await {
+        return row.try_get("id");
+    };
+
     let subscriber_id = Uuid::new_v4();
     let query = sqlx::query!(
         r#"INSERT INTO subscriptions (id, email, name, subscribed_at, status)
@@ -164,5 +172,6 @@ pub async fn insert_subscriber(
         tracing::error!("Failed to execute query: {:?}", e);
         e
     })?;
+
     Ok(subscriber_id)
 }

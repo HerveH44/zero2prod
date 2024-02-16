@@ -1,5 +1,6 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::domain::EmailClient;
+use crate::routes::newsletter::publish_newsletter;
 use crate::routes::subscriptions_confirm::confirm;
 use crate::routes::{health_check, subscribe};
 use actix_web::dev::Server;
@@ -73,6 +74,7 @@ fn run(
             .service(health_check)
             .service(subscribe)
             .service(confirm)
+            .service(publish_newsletter)
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())

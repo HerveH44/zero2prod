@@ -36,7 +36,6 @@ thiserror = "1"
 anyhow = "1"
 base64 = "0.13"
 argon2 = { version = "0.5", features = ["std"] }
-sha3 = "0.9"
 
 [dependencies.sqlx]
 version = "0.7"

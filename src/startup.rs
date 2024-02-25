@@ -3,7 +3,7 @@ use crate::domain::EmailClient;
 use crate::routes::home::home;
 use crate::routes::newsletter::publish_newsletter;
 use crate::routes::subscriptions_confirm::confirm;
-use crate::routes::{health_check, subscribe};
+use crate::routes::{health_check, login_form, subscribe};
 use actix_web::dev::Server;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
@@ -74,6 +74,7 @@ fn run(
             .wrap(TracingLogger::default())
             .service(health_check)
             .service(home)
+            .service(login_form)
             .service(subscribe)
             .service(confirm)
             .service(publish_newsletter)

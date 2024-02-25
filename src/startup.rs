@@ -1,6 +1,7 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::domain::EmailClient;
 use crate::routes::home::home;
+use crate::routes::login::login;
 use crate::routes::newsletter::publish_newsletter;
 use crate::routes::subscriptions_confirm::confirm;
 use crate::routes::{health_check, login_form, subscribe};
@@ -75,6 +76,7 @@ fn run(
             .service(health_check)
             .service(home)
             .service(login_form)
+            .service(login)
             .service(subscribe)
             .service(confirm)
             .service(publish_newsletter)

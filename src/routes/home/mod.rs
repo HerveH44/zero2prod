@@ -1,9 +1,3 @@
-use actix_web::http::header::ContentType;
-use actix_web::{get, HttpResponse, Responder};
+pub mod homepage;
 
-#[get("/")]
-pub async fn home() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(include_str!("home.html"))
-}
+pub use homepage::*;

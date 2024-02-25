@@ -1,5 +1,6 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::domain::EmailClient;
+use crate::routes::home::home;
 use crate::routes::newsletter::publish_newsletter;
 use crate::routes::subscriptions_confirm::confirm;
 use crate::routes::{health_check, subscribe};
@@ -72,6 +73,7 @@ fn run(
         App::new()
             .wrap(TracingLogger::default())
             .service(health_check)
+            .service(home)
             .service(subscribe)
             .service(confirm)
             .service(publish_newsletter)
